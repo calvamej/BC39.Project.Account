@@ -29,5 +29,6 @@ public class AccountEntity {
     private String productCode;
     private double maintenanceCost;
     private int maxOperations;
+    private int operationDay;
     /*Temp */
 }
