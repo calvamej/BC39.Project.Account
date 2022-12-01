@@ -57,10 +57,10 @@ public class AccountServiceImplementation implements AccountService{
                 .switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
     }
     @Override
-    public Mono<AccountEntity> getByClientAndProduct(String clientDocumentNumber, String productName)
+    public Mono<AccountEntity> getByClientAndProduct(String clientDocumentNumber, String productCode)
     {
         return accountRepository.findAll().filter(x -> x.getClientDocumentNumber().equals(clientDocumentNumber)
-                && x.getProductName().equals(productName)).next();
+                && x.getProductCode().equals(productCode)).next();
     }
     @Override
     public Mono<AccountEntity> depositBalance(String accountNumber, double balance)
@@ -124,12 +124,12 @@ public class AccountServiceImplementation implements AccountService{
 
         if(colEnt.getClientType().equals("P"))
         {
-            return getByClientAndProduct(colEnt.getClientDocumentNumber(), colEnt.getProductName())
+            return getByClientAndProduct(colEnt.getClientDocumentNumber(), colEnt.getProductCode())
                     .switchIfEmpty(accountRepository.save(colEnt));
         }
         else if (colEnt.getClientType().equals("E"))
         {
-            if(colEnt.getProductName().equals("Cuenta Corriente"))
+            if(colEnt.getProductCode().equals("CC"))
             {
                 if (colEnt.getOwners().size() > 0) {
                     return accountRepository.save(colEnt);

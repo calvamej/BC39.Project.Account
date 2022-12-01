@@ -37,9 +37,9 @@ public class AccountController {
         return accountService.delete(accountNumber);
     }
 
-    @GetMapping(value = "/GetByClientAndProduct/{clientDocumentNumber}/{productName}")
-    public Mono<AccountEntity> getByClientAndProduct(@PathVariable("clientDocumentNumber") String clientDocumentNumber,@PathVariable("productName") String productName){
-        return accountService.getByClientAndProduct(clientDocumentNumber,productName);
+    @GetMapping(value = "/GetByClientAndProduct/{clientDocumentNumber}/{productCode}")
+    public Mono<AccountEntity> getByClientAndProduct(@PathVariable("clientDocumentNumber") String clientDocumentNumber,@PathVariable("productCode") String productCode){
+        return accountService.getByClientAndProduct(clientDocumentNumber,productCode);
     }
     @GetMapping(value = "/GetBalance/{accountNumber}")
     public Mono<Double> getBalance(@PathVariable("accountNumber") String accountNumber){

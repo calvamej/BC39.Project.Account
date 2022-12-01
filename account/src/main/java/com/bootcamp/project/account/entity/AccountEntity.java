@@ -26,8 +26,7 @@ public class AccountEntity {
     private List<Person> signatories;
     /*Temp */
     private String clientType;
-    private String productName;
-    private String productType;
+    private String productCode;
     private double maintenanceCost;
     private int maxOperations;
     /*Temp */

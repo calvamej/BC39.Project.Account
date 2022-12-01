@@ -13,7 +13,7 @@ public interface AccountService {
     public Mono<Void> delete(String accountNumber);
 
 
-    public Mono<AccountEntity> getByClientAndProduct(String clientDocumentNumber, String productName);
+    public Mono<AccountEntity> getByClientAndProduct(String clientDocumentNumber, String productCode);
     public Mono<Double> getBalance(String account);
     public Mono<AccountEntity> depositBalance(String accountNumber, double balance);
     public Mono<AccountEntity> withdrawBalance(String accountNumber, double balance);
