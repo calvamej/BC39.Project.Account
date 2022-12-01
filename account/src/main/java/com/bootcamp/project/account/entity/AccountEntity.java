@@ -3,7 +3,6 @@ package com.bootcamp.project.account.entity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -16,13 +15,20 @@ import java.util.List;
 @Document(collection = "Account")
 public class AccountEntity {
     @Id
-    private ObjectId id;
     private String accountNumber;
-    private String client;
-    private String accountType;
-    private String clientType;
-    private boolean maintenanceCost;
-    private int maxOperations;
+    private String idProduct;
+    private String clientDocumentNumber;
     private double balance;
-    private Date insert_date;
+    private double maintenanceDebt;
+    private Date createDate;
+    private Date modifyDate;
+    private List<Person> owners;
+    private List<Person> signatories;
+    /*Temp */
+    private String clientType;
+    private String productName;
+    private String productType;
+    private double maintenanceCost;
+    private int maxOperations;
+    /*Temp */
 }

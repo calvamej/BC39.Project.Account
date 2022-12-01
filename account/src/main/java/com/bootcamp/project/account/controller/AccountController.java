@@ -28,35 +28,37 @@ public class AccountController {
 
         return accountService.save(col);
     }
-    @PutMapping(value = "/Update/{accountNumber}/{type}")
-    public Mono<AccountEntity> Update(@PathVariable("accountNumber") String accountNumber,@PathVariable("type") String type){
-        return accountService.update(accountNumber, type);
+    @PutMapping(value = "/Update/{accountNumber}/{balance}")
+    public Mono<AccountEntity> Update(@PathVariable("accountNumber") String accountNumber,@PathVariable("type") double balance){
+        return accountService.update(accountNumber, balance);
     }
     @DeleteMapping  (value = "/Delete/{accountNumber}")
     public Mono<Void> Delete(@PathVariable("accountNumber") String accountNumber){
         return accountService.delete(accountNumber);
     }
 
-    @GetMapping(value = "/findAccountByClient/{client}/{accountType}")
-    public Mono<ResponseEntity<AccountEntity>> findClientByDocument(@PathVariable("client") String client,@PathVariable("accountType") String accountType){
-        return accountService.findAccountByClient(client,accountType).map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+    @GetMapping(value = "/GetByClientAndProduct/{clientDocumentNumber}/{productName}")
+    public Mono<AccountEntity> getByClientAndProduct(@PathVariable("clientDocumentNumber") String clientDocumentNumber,@PathVariable("productName") String productName){
+        return accountService.getByClientAndProduct(clientDocumentNumber,productName);
     }
-    @PostMapping(value = "/registerAccount")
-    public Mono<ResponseEntity<AccountEntity>> registerClient(@RequestBody AccountEntity col){
-        return accountService.registerAccount(col).map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.badRequest().build());
+    @GetMapping(value = "/GetBalance/{accountNumber}")
+    public Mono<Double> getBalance(@PathVariable("accountNumber") String accountNumber){
+        return accountService.getBalance(accountNumber);
     }
-    @PutMapping(value = "/depositBalance/{accountNumber}/{balance}")
+    @PutMapping(value = "/DepositBalance/{accountNumber}/{balance}")
     public Mono<AccountEntity> depositBalance(@PathVariable("accountNumber") String accountNumber,@PathVariable("balance") double balance){
         return accountService.depositBalance(accountNumber,balance);
     }
-    @PutMapping(value = "/withdrawBalance/{accountNumber}/{balance}")
+    @PutMapping(value = "/WithdrawBalance/{accountNumber}/{balance}")
     public Mono<AccountEntity> withdrawBalance(@PathVariable("accountNumber") String accountNumber,@PathVariable("balance") double balance){
         return accountService.withdrawBalance(accountNumber,balance);
     }
-    @GetMapping(value = "/getBalance/{accountNumber}")
-    public double getBalance(@PathVariable("accountNumber") String accountNumber){
-        return accountService.getBalance(accountNumber);
+    @PutMapping(value = "/ApplyMaintenanceFee/{accountNumber}")
+    public Mono<AccountEntity> applyMaintenanceFee(@PathVariable("accountNumber") String accountNumber){
+        return accountService.applyMaintenanceFee(accountNumber);
+    }
+    @PostMapping(value = "/RegisterAccount")
+    public Mono<AccountEntity> registerClient(@RequestBody AccountEntity col){
+        return accountService.registerAccount(col);
     }
 }

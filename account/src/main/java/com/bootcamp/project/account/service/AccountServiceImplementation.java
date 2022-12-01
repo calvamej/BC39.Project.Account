@@ -2,6 +2,8 @@ package com.bootcamp.project.account.service;
 
 import com.bootcamp.project.account.AccountApplication;
 import com.bootcamp.project.account.entity.AccountEntity;
+import com.bootcamp.project.account.exception.CustomInformationException;
+import com.bootcamp.project.account.exception.CustomNotFoundException;
 import com.bootcamp.project.account.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -9,6 +11,9 @@ import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import org.apache.log4j.Logger;
+
+import java.util.Date;
+
 @Service
 public class AccountServiceImplementation implements AccountService{
     private static Logger Log = Logger.getLogger(AccountServiceImplementation.class);
@@ -16,117 +21,134 @@ public class AccountServiceImplementation implements AccountService{
     private AccountRepository accountRepository;
 
     @Override
-    public Mono<AccountEntity> getOne(String accountNumber) {
-        Log.info("Inicio método getOne.");
-        Mono<AccountEntity> col = accountRepository.findAll().filter(x -> x.getAccountNumber().equals(accountNumber)).next();
-        return col;
-    }
-
-    @Override
     public Flux<AccountEntity> getAll() {
-        Log.info("Inicio método getAll.");
-        Flux<AccountEntity> col = accountRepository.findAll();
-        return col;
+        return accountRepository.findAll().switchIfEmpty(Mono.error(new CustomNotFoundException("Accounts not found")));
     }
-
+    @Override
+    public Mono<AccountEntity> getOne(String accountNumber) {
+        return accountRepository.findAll().filter(x -> x.getAccountNumber().equals(accountNumber)).next();
+    }
     @Override
     public Mono<AccountEntity> save(AccountEntity colEnt) {
-        Log.info("Inicio método save.");
         return accountRepository.save(colEnt);
     }
 
     @Override
-    public Mono<AccountEntity> update(String accountNumber, String type) {
-        Log.info("Inicio método update.");
-        Mono<AccountEntity> col = getOne(accountNumber);
-        AccountEntity newCol = col.block();
-        newCol.setAccountType(type);
-        return accountRepository.save(newCol);
+    public Mono<AccountEntity> update(String accountNumber, double balance) {
+        return getOne(accountNumber).flatMap(c -> {
+            c.setBalance(balance);
+            c.setModifyDate(new Date());
+            return accountRepository.save(c);
+        }).switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
     }
 
     @Override
     public Mono<Void> delete(String accountNumber) {
-        Log.info("Inicio método delete.");
-        Mono<AccountEntity> col = getOne(accountNumber);
-        AccountEntity newCol = col.block();
-        return accountRepository.delete(newCol);
+        return getOne(accountNumber)
+                .switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")))
+                .flatMap(c -> {
+                    return accountRepository.delete(c);
+                });
     }
-    /*
-    MÉTODOS DE NEGOCIO
-    */
+    @Override
+    public Mono<Double> getBalance(String accountNumber) {
+        return getOne(accountNumber)
+                .map(x -> x.getBalance())
+                .switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
+    }
+    @Override
+    public Mono<AccountEntity> getByClientAndProduct(String clientDocumentNumber, String productName)
+    {
+        return accountRepository.findAll().filter(x -> x.getClientDocumentNumber().equals(clientDocumentNumber)
+                && x.getProductName().equals(productName)).next();
+    }
+    @Override
+    public Mono<AccountEntity> depositBalance(String accountNumber, double balance)
+    {
+        return getOne(accountNumber).flatMap(c -> {
+            double debt = c.getMaintenanceDebt();
+            if(debt > 0)
+            {
+                if(debt < balance)
+                {
+                    c.setBalance(c.getBalance() + (balance - debt));
+                    c.setMaintenanceDebt(0);
+                }
+                else
+                {
+                    c.setMaintenanceDebt(debt - balance);
+                }
+            }
+            else {
+                c.setBalance(c.getBalance() + balance);
 
+            }
+            c.setModifyDate(new Date());
+            return accountRepository.save(c);
+        }).switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
+    }
+    @Override
+    public Mono<AccountEntity> withdrawBalance(String accountNumber, double balance)
+    {
+        return getOne(accountNumber).flatMap(c -> {
+            if(c.getBalance() >= balance) {
+                c.setBalance(c.getBalance() - balance);
+                c.setModifyDate(new Date());
+                return accountRepository.save(c);
+            }
+            else
+            {
+                return Mono.error(new CustomInformationException("The account does not have enough funds"));
+            }
+        }).switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
+    }
+    @Override
+    public Mono<AccountEntity> applyMaintenanceFee(String accountNumber)
+    {
+        return getOne(accountNumber).flatMap(c -> {
+            if(c.getBalance() < c.getMaintenanceCost())
+            {
+                c.setBalance(0);
+                c.setMaintenanceDebt(c.getMaintenanceCost() - c.getBalance());
+            }
+            else
+            {
+                c.setBalance(c.getBalance() - c.getMaintenanceCost());
+            }
+            c.setModifyDate(new Date());
+            return accountRepository.save(c);
+        }).switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
+    }
     @Override
     public Mono<AccountEntity> registerAccount(AccountEntity colEnt) {
-        Log.info("Inicio método registerAccount.");
+
         if(colEnt.getClientType().equals("P"))
         {
-            return findAccountByClient(colEnt.getClient(), colEnt.getAccountType())
+            return getByClientAndProduct(colEnt.getClientDocumentNumber(), colEnt.getProductName())
                     .switchIfEmpty(accountRepository.save(colEnt));
         }
         else if (colEnt.getClientType().equals("E"))
         {
-            if(colEnt.getAccountType().equals("CC"))
+            if(colEnt.getProductName().equals("Cuenta Corriente"))
             {
-                return accountRepository.save(colEnt);
+                if (colEnt.getOwners().size() > 0) {
+                    return accountRepository.save(colEnt);
+                }
+                else
+                {
+                    return Mono.error(new CustomInformationException("Business accounts require at least 1 owner"));
+                }
+
             }
             else
             {
-                return Mono.just(new AccountEntity());
+                return Mono.error(new CustomInformationException("Business clients can only create the following type of account: Cuenta Corriente"));
             }
         }
         else
         {
-            return Mono.just(new AccountEntity());
+            return Mono.error(new CustomInformationException("Invalid type of client"));
         }
-    }
-    @Override
-    public Mono<AccountEntity> findAccountByClient(String client, String accountType)
-    {
-        Log.info("Inicio método findAccountByClient.");
-        Mono<AccountEntity> col = accountRepository.findAll().filter(x -> x.getClient().equals(client) && x.getAccountType().equals(accountType)).next();
 
-        return col;
     }
-    @Override
-    public Mono<AccountEntity> depositBalance(String account, double balance)
-    {
-        Log.info("Inicio método depositBalance.");
-        Mono<AccountEntity> col = accountRepository.findAll().filter(x -> x.getAccountNumber().equals(account)).next();
-        AccountEntity newCol = col.block();
-        if(newCol==null)
-        {
-            return Mono.just(new AccountEntity());
-        }
-        newCol.setBalance(newCol.getBalance() + balance);
-        return accountRepository.save(newCol);
-    }
-    @Override
-    public Mono<AccountEntity> withdrawBalance(String account, double balance)
-    {
-        Log.info("Inicio método withdrawBalance.");
-        Mono<AccountEntity> col = accountRepository.findAll().filter(x -> x.getAccountNumber().equals(account)).next();
-        AccountEntity newCol = col.block();
-        if(newCol==null)
-        {
-            return Mono.just(new AccountEntity());
-        }
-        if(newCol.getBalance() >= balance)
-        {
-            newCol.setBalance(newCol.getBalance() - balance);
-            return accountRepository.save(newCol);
-        }
-        else
-        {
-            return Mono.just(new AccountEntity());
-        }
-    }
-    @Override
-    public double getBalance(String accountNumber) {
-        Log.info("Inicio método getBalance.");
-        Mono<AccountEntity> col = getOne(accountNumber);
-        AccountEntity newCol = col.block();
-        return newCol.getBalance();
-    }
-
-
 }
