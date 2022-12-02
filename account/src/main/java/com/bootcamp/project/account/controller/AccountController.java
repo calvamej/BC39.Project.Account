@@ -57,8 +57,24 @@ public class AccountController {
     public Mono<AccountEntity> applyMaintenanceFee(@PathVariable("accountNumber") String accountNumber){
         return accountService.applyMaintenanceFee(accountNumber);
     }
-    @PostMapping(value = "/RegisterAccount")
-    public Mono<AccountEntity> registerClient(@RequestBody AccountEntity col){
-        return accountService.registerAccount(col);
+    @PostMapping(value = "/RegisterPersonal")
+    public Mono<AccountEntity> registerPersonalAccount(@RequestBody AccountEntity col){
+        return accountService.registerPersonalAccount(col);
+    }
+    @PostMapping(value = "/RegisterCompany")
+    public Mono<AccountEntity> registerCompanyAccount(@RequestBody AccountEntity col){
+        return accountService.registerCompanyAccount(col);
+    }
+    @PutMapping(value = "/TransferBalance/{sourceAccountNumber}/{targetAccountNumber}/{balance}")
+    public Mono<AccountEntity> transferBalance(@PathVariable("sourceAccountNumber") String sourceAccountNumber,@PathVariable("targetAccountNumber") String targetAccountNumber,@PathVariable("balance") double balance){
+        return accountService.transferBalance(sourceAccountNumber,targetAccountNumber,balance);
+    }
+    @PutMapping(value = "/ApplyCommissionFee/{accountNumber}/{amount}")
+    public Mono<AccountEntity> applyCommissionFee(@PathVariable("accountNumber") String accountNumber,@PathVariable("amount") double amount){
+        return accountService.applyCommissionFee(accountNumber,amount);
+    }
+    @GetMapping(value = "/CheckMinimumDailyBalance/{accountNumber}")
+    public Mono<Boolean> checkMinimumDailyBalance(@PathVariable("accountNumber") String accountNumber){
+        return accountService.checkMinimumDailyBalance(accountNumber);
     }
 }

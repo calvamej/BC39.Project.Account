@@ -66,17 +66,17 @@ public class AccountServiceImplementation implements AccountService{
     public Mono<AccountEntity> depositBalance(String accountNumber, double balance)
     {
         return getOne(accountNumber).flatMap(c -> {
-            double debt = c.getMaintenanceDebt();
+            double debt = c.getOperationalDebt();
             if(debt > 0)
             {
                 if(debt < balance)
                 {
                     c.setBalance(c.getBalance() + (balance - debt));
-                    c.setMaintenanceDebt(0);
+                    c.setOperationalDebt(0);
                 }
                 else
                 {
-                    c.setMaintenanceDebt(debt - balance);
+                    c.setOperationalDebt(debt - balance);
                 }
             }
             else {
@@ -108,8 +108,8 @@ public class AccountServiceImplementation implements AccountService{
         return getOne(accountNumber).flatMap(c -> {
             if(c.getBalance() < c.getMaintenanceCost())
             {
+                c.setOperationalDebt(c.getOperationalDebt() + (c.getMaintenanceCost() - c.getBalance()));
                 c.setBalance(0);
-                c.setMaintenanceDebt(c.getMaintenanceCost() - c.getBalance());
             }
             else
             {
@@ -120,15 +120,40 @@ public class AccountServiceImplementation implements AccountService{
         }).switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
     }
     @Override
-    public Mono<AccountEntity> registerAccount(AccountEntity colEnt) {
+    public Mono<AccountEntity> applyCommissionFee(String accountNumber, double amount)
+    {
+        return getOne(accountNumber).flatMap(c -> {
+            if(c.getBalance() < amount)
+            {
+                c.setOperationalDebt(amount - c.getBalance());
+                c.setBalance(0);
+            }
+            else
+            {
+                c.setBalance(c.getBalance() - amount);
+            }
+            c.setModifyDate(new Date());
+            return accountRepository.save(c);
+        }).switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
+    }
+    @Override
+    public Mono<AccountEntity> registerPersonalAccount(AccountEntity colEnt) {
 
-        if(colEnt.getClientType().equals("P"))
+        if(colEnt.getMinimumOpeningAmount() > colEnt.getBalance())
         {
+            return Mono.error(new CustomInformationException("The account requires a higher opening balance"));
+        }
             return getByClientAndProduct(colEnt.getClientDocumentNumber(), colEnt.getProductCode())
                     .switchIfEmpty(accountRepository.save(colEnt));
-        }
-        else if (colEnt.getClientType().equals("E"))
+    }
+    @Override
+    public Mono<AccountEntity> registerCompanyAccount(AccountEntity colEnt) {
+
+        if(colEnt.getMinimumOpeningAmount() > colEnt.getBalance())
         {
+            return Mono.error(new CustomInformationException("The account requires a higher opening balance"));
+        }
+
             if(colEnt.getProductCode().equals("CC"))
             {
                 if (colEnt.getOwners().size() > 0) {
@@ -136,19 +161,27 @@ public class AccountServiceImplementation implements AccountService{
                 }
                 else
                 {
-                    return Mono.error(new CustomInformationException("Business accounts require at least 1 owner"));
+                    return Mono.error(new CustomInformationException("Company accounts require at least 1 owner"));
                 }
 
             }
             else
             {
-                return Mono.error(new CustomInformationException("Business clients can only create the following type of account: Cuenta Corriente"));
+                return Mono.error(new CustomInformationException("Company clients can only create the following type of account: Cuenta Corriente"));
             }
-        }
-        else
-        {
-            return Mono.error(new CustomInformationException("Invalid type of client"));
-        }
 
+    }
+    @Override
+    public Mono<AccountEntity> transferBalance(String sourceAccountNumber, String targetAccountNumber ,double balance)
+    {
+        return getOne(sourceAccountNumber).switchIfEmpty(Mono.error(new CustomNotFoundException("Source account not found")))
+                .then(getOne(targetAccountNumber).switchIfEmpty(Mono.error(new CustomNotFoundException("Target account not found"))))
+                .then(withdrawBalance(sourceAccountNumber, balance).then(depositBalance(targetAccountNumber, balance)))
+                .then(getOne(sourceAccountNumber));
+    }
+    @Override
+    public Mono<Boolean> checkMinimumDailyBalance(String accountNumber) {
+        return getOne(accountNumber).filter(x -> x.getBalance() >= x.getMinimumDiaryAmount()).hasElement()
+                .switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
     }
 }

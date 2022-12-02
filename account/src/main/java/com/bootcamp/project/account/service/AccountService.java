@@ -17,8 +17,12 @@ public interface AccountService {
     public Mono<Double> getBalance(String account);
     public Mono<AccountEntity> depositBalance(String accountNumber, double balance);
     public Mono<AccountEntity> withdrawBalance(String accountNumber, double balance);
-    public Mono<AccountEntity> registerAccount(AccountEntity colEnt);
+    public Mono<AccountEntity> registerPersonalAccount(AccountEntity colEnt);
+    public Mono<AccountEntity> registerCompanyAccount(AccountEntity colEnt);
     public Mono<AccountEntity> applyMaintenanceFee(String accountNumber);
+    public Mono<AccountEntity> applyCommissionFee(String accountNumber, double amount);
+    public Mono<AccountEntity> transferBalance(String sourceAccountNumber, String targetAccountNumber ,double balance);
+    public Mono<Boolean> checkMinimumDailyBalance(String account);
 
 
 

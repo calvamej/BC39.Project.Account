@@ -19,16 +19,20 @@ public class AccountEntity {
     private String idProduct;
     private String clientDocumentNumber;
     private double balance;
-    private double maintenanceDebt;
+    private double operationalDebt;
     private Date createDate;
     private Date modifyDate;
     private List<Person> owners;
     private List<Person> signatories;
     /*Temp */
     private String clientType;
+    private String clientSubType;
     private String productCode;
+    private double minimumOpeningAmount;
+    private double minimumDiaryAmount;
     private double maintenanceCost;
     private int maxOperations;
+    private int maxFreeOperations;
     private int operationDay;
     /*Temp */
 }
