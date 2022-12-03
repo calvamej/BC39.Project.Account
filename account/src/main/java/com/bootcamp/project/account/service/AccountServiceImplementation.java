@@ -181,7 +181,7 @@ public class AccountServiceImplementation implements AccountService{
     }
     @Override
     public Mono<Boolean> checkMinimumDailyBalance(String accountNumber) {
-        return getOne(accountNumber).filter(x -> x.getBalance() >= x.getMinimumDiaryAmount()).hasElement()
+        return getOne(accountNumber).filter(x -> x.getBalance() >= x.getMinimumDailyAmount()).hasElement()
                 .switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
     }
 }

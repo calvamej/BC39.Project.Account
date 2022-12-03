@@ -29,7 +29,7 @@ public class AccountEntity {
     private String clientSubType;
     private String productCode;
     private double minimumOpeningAmount;
-    private double minimumDiaryAmount;
+    private double minimumDailyAmount;
     private double maintenanceCost;
     private int maxOperations;
     private int maxFreeOperations;
