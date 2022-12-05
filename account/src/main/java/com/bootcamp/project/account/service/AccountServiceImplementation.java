@@ -1,7 +1,5 @@
 package com.bootcamp.project.account.service;
 
-import com.bootcamp.project.account.AccountApplication;
-import com.bootcamp.project.account.client.ClientClient;
 import com.bootcamp.project.account.entity.AccountEntity;
 import com.bootcamp.project.account.exception.CustomInformationException;
 import com.bootcamp.project.account.exception.CustomNotFoundException;
@@ -21,11 +19,6 @@ public class AccountServiceImplementation implements AccountService{
     private static Logger Log = Logger.getLogger(AccountServiceImplementation.class);
     @Autowired
     private AccountRepository accountRepository;
-    @Autowired
-    private ClientClient clientClient;
-
-    @Autowired
-    ReactiveCircuitBreaker accountCircuitBreaker;
 
     @Override
     public Flux<AccountEntity> getAll() {
@@ -145,7 +138,6 @@ public class AccountServiceImplementation implements AccountService{
     }
     @Override
     public Mono<AccountEntity> registerPersonalAccount(AccountEntity colEnt) {
-        Mono<Boolean> test = clientClient.checkClient(colEnt.getClientDocumentNumber());
 
         if(colEnt.getMinimumOpeningAmount() > colEnt.getBalance())
         {
