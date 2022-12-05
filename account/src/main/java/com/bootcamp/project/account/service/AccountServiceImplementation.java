@@ -190,6 +190,5 @@ public class AccountServiceImplementation implements AccountService{
                 .switchIfEmpty(Mono.error(new CustomNotFoundException("The client does not have an account")));
 
         return count.collect(Collectors.averagingDouble(AccountEntity::getBalance));
-
     }
 }
