@@ -186,9 +186,9 @@ public class AccountServiceImplementation implements AccountService{
     }
     @Override
     public Mono<Double> getAverageBalance(String clientDocumentNumber) {
-        Flux<AccountEntity> count = accountRepository.findAll().filter(x -> x.getClientDocumentNumber().equals(clientDocumentNumber))
+        Flux<AccountEntity> accountEntityFlux = accountRepository.findAll().filter(x -> x.getClientDocumentNumber().equals(clientDocumentNumber))
                 .switchIfEmpty(Mono.error(new CustomNotFoundException("The client does not have an account")));
 
-        return count.collect(Collectors.averagingDouble(AccountEntity::getBalance));
+        return accountEntityFlux.collect(Collectors.averagingDouble(AccountEntity::getBalance));
     }
 }
