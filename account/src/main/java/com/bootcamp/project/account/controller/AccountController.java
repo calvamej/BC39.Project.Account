@@ -77,4 +77,8 @@ public class AccountController {
     public Mono<Boolean> checkMinimumDailyBalance(@PathVariable("accountNumber") String accountNumber){
         return accountService.checkMinimumDailyBalance(accountNumber);
     }
+    @GetMapping(value = "/GetAverageBalance/{clientDocumentNumber}")
+    public Mono<Double> getAverageBalance(@PathVariable("clientDocumentNumber") String clientDocumentNumber){
+        return accountService.getAverageBalance(clientDocumentNumber);
+    }
 }

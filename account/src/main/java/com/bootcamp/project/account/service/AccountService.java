@@ -23,7 +23,5 @@ public interface AccountService {
     public Mono<AccountEntity> applyCommissionFee(String accountNumber, double amount);
     public Mono<AccountEntity> transferBalance(String sourceAccountNumber, String targetAccountNumber ,double balance);
     public Mono<Boolean> checkMinimumDailyBalance(String account);
-
-
-
+    public Mono<Double> getAverageBalance(String clientDocumentNumber);
 }

@@ -7,12 +7,12 @@ import com.bootcamp.project.account.exception.CustomNotFoundException;
 import com.bootcamp.project.account.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import org.apache.log4j.Logger;
 
 import java.util.Date;
+import java.util.stream.Collectors;
 
 @Service
 public class AccountServiceImplementation implements AccountService{
@@ -183,5 +183,13 @@ public class AccountServiceImplementation implements AccountService{
     public Mono<Boolean> checkMinimumDailyBalance(String accountNumber) {
         return getOne(accountNumber).filter(x -> x.getBalance() >= x.getMinimumDailyAmount()).hasElement()
                 .switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
+    }
+    @Override
+    public Mono<Double> getAverageBalance(String clientDocumentNumber) {
+        Flux<AccountEntity> count = accountRepository.findAll().filter(x -> x.getClientDocumentNumber().equals(clientDocumentNumber))
+                .switchIfEmpty(Mono.error(new CustomNotFoundException("The client does not have an account")));
+
+        return count.collect(Collectors.averagingDouble(AccountEntity::getBalance));
+
     }
 }
