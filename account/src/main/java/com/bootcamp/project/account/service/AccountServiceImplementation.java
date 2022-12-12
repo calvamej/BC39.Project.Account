@@ -5,7 +5,6 @@ import com.bootcamp.project.account.exception.CustomInformationException;
 import com.bootcamp.project.account.exception.CustomNotFoundException;
 import com.bootcamp.project.account.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreaker;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
