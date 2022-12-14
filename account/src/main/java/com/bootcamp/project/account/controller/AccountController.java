@@ -88,11 +88,6 @@ public class AccountController {
     public Mono<Boolean> checkDebitCardMainAccount(@PathVariable("debitCardNumber") String debitCardNumber){
         return accountService.checkDebitCardMainAccount(debitCardNumber);
     }
-    //New Method: Trae el saldo (balance) de la cuenta principal asociada a la tarjeta de débito.
-    @GetMapping(value = "/GetBalanceByDebitCard/{debitCardNumber}")
-    public Mono<Double> getBalanceByDebitCard(@PathVariable("debitCardNumber") String debitCardNumber){
-        return accountService.getBalanceByDebitCard(debitCardNumber);
-    }
     //New Method: Asocia la cuenta ingresada a la tarjeta de débito ingresada.
     // Le coloca debitCardMainAccount = true porque será cuenta principal asociada a la tarjeta.
     @PutMapping(value = "/LinkDebitCardMainAccount/{accountNumber}/{debitCardNumber}")
@@ -112,6 +107,11 @@ public class AccountController {
     @PutMapping(value = "/LinkDebitCardSecondaryAccounts/{clientDocumentNumber}/{debitCardNumber}")
     public Flux<AccountEntity> linkDebitCardSecondaryAccounts(@PathVariable("clientDocumentNumber") String clientDocumentNumber,@PathVariable("debitCardNumber") String debitCardNumber){
         return accountService.linkDebitCardSecondaryAccounts(clientDocumentNumber,debitCardNumber);
+    }
+    //New Method: Trae el saldo (balance) de la cuenta principal asociada a la tarjeta de débito.
+    @GetMapping(value = "/GetBalanceByDebitCard/{debitCardNumber}")
+    public Mono<Double> getBalanceByDebitCard(@PathVariable("debitCardNumber") String debitCardNumber){
+        return accountService.getBalanceByDebitCard(debitCardNumber);
     }
     //New Method: Cuando se realiza alguna compra o pago con la tarjeta de débito, se llama al método con el número de la tarjeta y el monto consumido.
     // El método luego trae todas las cuentas asociadas a la tarjeta de débito y filtra solo aquellas que tengan el saldo suficiente para realizar el pago.
