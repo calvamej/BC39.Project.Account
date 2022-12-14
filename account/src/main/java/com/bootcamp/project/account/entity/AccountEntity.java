@@ -20,10 +20,13 @@ public class AccountEntity {
     private String clientDocumentNumber;
     private double balance;
     private double operationalDebt;
-    private Date createDate;
-    private Date modifyDate;
     private List<Person> owners;
     private List<Person> signatories;
+    private String debitCardNumber;
+    private Boolean debitCardMainAccount;
+    private int debitCardPriorityOrder;
+    private Date createDate;
+    private Date modifyDate;
     /*Temp */
     private String clientType;
     private String clientSubType;

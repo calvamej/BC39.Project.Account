@@ -4,6 +4,8 @@ import com.bootcamp.project.account.entity.AccountEntity;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Date;
+
 public interface AccountService {
 
     public Mono<AccountEntity> getOne(String accountNumber);
@@ -24,4 +26,15 @@ public interface AccountService {
     public Mono<AccountEntity> transferBalance(String sourceAccountNumber, String targetAccountNumber ,double balance);
     public Mono<Boolean> checkMinimumDailyBalance(String account);
     public Mono<Double> getAverageBalance(String clientDocumentNumber);
+
+    public Mono<Boolean> checkDebitCardMainAccount(String debitCardNumber);
+    public Mono<Double> getBalanceByDebitCard(String debitCardNumber);
+    public Mono<AccountEntity> linkDebitCardMainAccount(String accountNumber, String debitCardNumber);
+    public Mono<AccountEntity> linkDebitCardSecondaryAccount(String accountNumber, String debitCardNumber);
+    public Flux<AccountEntity> linkDebitCardSecondaryAccounts(String clientDocumentNumber, String debitCardNumber);
+
+    public Mono<AccountEntity> addDebitCardPayment(String debitCardNumber, double amount);
+    public Flux<AccountEntity> getByClient(String clientDocumentNumber);
+    public Flux<AccountEntity> getByClientAndDates(String clientDocumentNumber, Date initialDate, Date finalDate);
+
 }
