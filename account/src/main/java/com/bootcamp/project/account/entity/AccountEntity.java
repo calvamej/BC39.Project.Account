@@ -1,5 +1,7 @@
 package com.bootcamp.project.account.entity;
 
+import com.bootcamp.project.account.entity.person.PersonEntity;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,27 +17,39 @@ import java.util.List;
 @Document(collection = "Account")
 public class AccountEntity {
     @Id
+    private String id;
     private String accountNumber;
-    private String idProduct;
+    //PRODUCT CODE: SA = SAVING ACCOUNT, CA = CURRENT ACCOUNT, FA = FIXED TERM ACCOUNT.
+    private String productCode;
     private String clientDocumentNumber;
+    //CLIENT TYPE: BUSINESS (B), PERSONAL (P).
+    private String clientType;
+    //CLIENT SUBTYPE: PYME, VIP.
+    private String clientSubType;
     private double balance;
     private double operationalDebt;
-    private List<Person> owners;
-    private List<Person> signatories;
+    private List<PersonEntity> owners;
+    private List<PersonEntity> signatories;
+
+    //TRUE = HAS A DEBIT CARD ASSOCIATED WITH THE ACCOUNT.
+    private Boolean hasDebitCard;
+    //DEBIT CARD NUMBER
     private String debitCardNumber;
+    //TRUE = THIS IS THE DEBIT CARD MAIN ACCOUNT.
     private Boolean debitCardMainAccount;
+    //ORDER OF THIS ACCOUNT IN ALL THE ACCOUNTS ASSOCIATED WITH THE DEBIT CARD. (1 = MAIN ACCOUNT).
     private int debitCardPriorityOrder;
-    private Date createDate;
-    private Date modifyDate;
-    /*Temp */
-    private String clientType;
-    private String clientSubType;
-    private String productCode;
-    private double minimumOpeningAmount;
-    private double minimumDailyAmount;
+
+    private double minimumOpeningBalance;
+    private double MinimumDailyBalance;
     private double maintenanceCost;
-    private int maxOperations;
-    private int maxFreeOperations;
+    private int maxMonthlyOperations;
+    private int currentMonthOperations;
+    private double commissionPercentage;
     private int operationDay;
-    /*Temp */
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
+    private Date createDate;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
+    private Date modifyDate;
 }

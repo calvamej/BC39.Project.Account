@@ -5,4 +5,5 @@ import org.bson.types.ObjectId;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 public interface AccountRepository extends ReactiveCrudRepository<AccountEntity, ObjectId> {
+
 }
