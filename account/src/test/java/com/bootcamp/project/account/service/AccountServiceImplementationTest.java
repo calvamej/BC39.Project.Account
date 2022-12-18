@@ -105,17 +105,4 @@ class AccountServiceImplementationTest {
         Flux<AccountEntity> result = accountServiceImplementation.getByClient("17593382");
         Assertions.assertNotNull(result);
     }
-
-    @Test
-    void getByClientAndDates() {
-        AccountEntity accountEntity = new AccountEntity();
-        accountEntity.setDebitCardNumber("12345");
-        accountEntity.setBalance(12.0);
-        accountEntity.setDebitCardMainAccount(true);
-        List<AccountEntity> accountEntityList = new ArrayList<>();
-        accountEntityList.add(accountEntity);
-        Mockito.when(accountRepository.findAll()).thenReturn(Flux.fromIterable(accountEntityList));
-        Flux<AccountEntity> result = accountServiceImplementation.getByClientAndDates("17593382",new Date(), new Date());
-        Assertions.assertNotNull(result);
-    }
 }
