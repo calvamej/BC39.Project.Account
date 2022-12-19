@@ -27,15 +27,13 @@ public interface AccountService {
     public Mono<Boolean> checkIfCommissionApply(String accountNumber);
     public Mono<Boolean> checkVIPMinimumDailyBalance(String accountNumber);
     public Flux<AccountDailyReportEntity> getAverageBalanceByClient(String clientDocumentNumber);
-    public Flux<AccountReportEntity> getCreditsByDates(Date initialDate, Date finalDate);
-    public Flux<AccountReportEntity> getCreditsByClient(String clientDocumentNumber);
-
-
-    public Mono<AccountEntity> transferBalance(String sourceAccountNumber, String targetAccountNumber ,double balance);
+    public Flux<AccountReportEntity> getAccountsByDates(Date initialDate, Date finalDate);
+    public Flux<AccountReportEntity> getAccountsByClient(String clientDocumentNumber);
+    public Mono<AccountEntity> transferBalance(String sourceAccountNumber, String targetAccountNumber ,double amount);
     public Mono<Boolean> checkDebitCardMainAccount(String debitCardNumber);
-    public Mono<Double> getBalanceByDebitCard(String debitCardNumber);
     public Mono<AccountEntity> linkDebitCardMainAccount(String accountNumber, String debitCardNumber);
-    public Mono<AccountEntity> linkDebitCardSecondaryAccount(String accountNumber, String debitCardNumber);
-    public Flux<AccountEntity> linkDebitCardSecondaryAccounts(String clientDocumentNumber, String debitCardNumber);
+    public Mono<Double> getDebitCardMainAccountBalance(String debitCardNumber);
+    public Mono<Integer> getDebitCardNextPriorityOrder(String debitCardNumber);
+    public Mono<AccountEntity> linkDebitCardSecondaryAccount(String accountNumber, String debitCardNumber,Integer DebitCardPriorityOrder);
     public Mono<AccountEntity> addDebitCardPayment(String debitCardNumber, double amount);
 }

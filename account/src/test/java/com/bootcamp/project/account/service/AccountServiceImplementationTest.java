@@ -13,7 +13,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 class AccountServiceImplementationTest {
@@ -51,20 +50,6 @@ class AccountServiceImplementationTest {
         Assertions.assertNotNull(result);
         Assertions.assertEquals(true, result.block().booleanValue());
     }
-
-    @Test
-    void linkDebitCardSecondaryAccounts() {
-        AccountEntity accountEntity = new AccountEntity();
-        accountEntity.setDebitCardNumber("12345");
-        accountEntity.setBalance(12.0);
-        accountEntity.setDebitCardMainAccount(true);
-        List<AccountEntity> accountEntityList = new ArrayList<>();
-        accountEntityList.add(accountEntity);
-        Mockito.when(accountRepository.findAll()).thenReturn(Flux.fromIterable(accountEntityList));
-        Flux<AccountEntity> result = accountServiceImplementation.linkDebitCardSecondaryAccounts("12345","78910");
-        Assertions.assertNotNull(result);
-    }
-
     @Test
     void getBalanceByDebitCard() {
         AccountEntity accountEntity = new AccountEntity();
@@ -74,7 +59,7 @@ class AccountServiceImplementationTest {
         List<AccountEntity> accountEntityList = new ArrayList<>();
         accountEntityList.add(accountEntity);
         Mockito.when(accountRepository.findAll()).thenReturn(Flux.fromIterable(accountEntityList));
-        Mono<Double> result = accountServiceImplementation.getBalanceByDebitCard("78910");
+        Mono<Double> result = accountServiceImplementation.getDebitCardMainAccountBalance("78910");
         Assertions.assertNotNull(result);
         Assertions.assertEquals(12.0, result.block());
     }

@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import org.apache.log4j.Logger;
-
 import java.util.Comparator;
 import java.util.Date;
 import java.util.stream.Collectors;
@@ -223,7 +222,7 @@ public class AccountServiceImplementation implements AccountService{
                 .switchIfEmpty(Mono.error(new CustomNotFoundException("The client does not have accounts")));
     }
     @Override
-    public Flux<AccountReportEntity> getCreditsByDates(Date initialDate, Date finalDate)
+    public Flux<AccountReportEntity> getAccountsByDates(Date initialDate, Date finalDate)
     {
         return accountRepository.findAll()
                 .filter(c -> c.getCreateDate() != null && c.getCreateDate().after(initialDate) && c.getCreateDate().before(finalDate))
@@ -234,7 +233,7 @@ public class AccountServiceImplementation implements AccountService{
                 .switchIfEmpty(Mono.error(new CustomNotFoundException("Accounts not found between the given dates.")));
     }
     @Override
-    public Flux<AccountReportEntity> getCreditsByClient(String clientDocumentNumber)
+    public Flux<AccountReportEntity> getAccountsByClient(String clientDocumentNumber)
     {
         return accountRepository.findAll()
                 .filter(c -> c.getClientDocumentNumber() != null && c.getClientDocumentNumber().equals(clientDocumentNumber))
@@ -245,65 +244,71 @@ public class AccountServiceImplementation implements AccountService{
                 .switchIfEmpty(Mono.error(new CustomNotFoundException("The client does not have accounts")));
     }
     @Override
-    public Mono<AccountEntity> transferBalance(String sourceAccountNumber, String targetAccountNumber ,double balance)
+    public Mono<AccountEntity> transferBalance(String sourceAccountNumber, String targetAccountNumber ,double amount)
     {
         return getOne(sourceAccountNumber).switchIfEmpty(Mono.error(new CustomNotFoundException("Source account not found")))
                 .then(getOne(targetAccountNumber).switchIfEmpty(Mono.error(new CustomNotFoundException("Target account not found"))))
-                .then(withdrawBalance(sourceAccountNumber, balance).then(depositBalance(targetAccountNumber, balance)))
+                .then(withdrawBalance(sourceAccountNumber, amount).then(depositBalance(targetAccountNumber, amount)))
                 .then(getOne(sourceAccountNumber));
+    }
+    @Override
+    public Mono<Boolean> checkDebitCardMainAccount(String debitCardNumber)
+    {
+        return accountRepository.findAll().filter(x -> x.getDebitCardNumber() != null && x.getDebitCardNumber().equals(debitCardNumber)
+                && x.getDebitCardMainAccount() != null && x.getDebitCardMainAccount().equals(true)).hasElements();
     }
     @Override
     public Mono<AccountEntity> linkDebitCardMainAccount(String accountNumber, String debitCardNumber)
     {
-        return getOne(accountNumber).flatMap(c -> {
-            c.setDebitCardNumber(debitCardNumber);
-            c.setDebitCardPriorityOrder(0);
-            c.setDebitCardMainAccount(true);
-            c.setModifyDate(new Date());
-            return accountRepository.save(c);
-        }).switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
+        return getOne(accountNumber).flatMap(c -> checkDebitCardMainAccount(debitCardNumber).flatMap(x -> {
+            if (x) {
+                return Mono.error(new CustomNotFoundException("The Debit Card Number has already a main account associated."));
+            } else {
+                c.setHasDebitCard(true);
+                c.setDebitCardNumber(debitCardNumber);
+                c.setDebitCardPriorityOrder(1);
+                c.setDebitCardMainAccount(true);
+                c.setModifyDate(new Date());
+                return accountRepository.save(c);
+            }
+        })).switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
     }
     @Override
-    public Mono<AccountEntity> linkDebitCardSecondaryAccount(String accountNumber, String debitCardNumber)
+    public Mono<Double> getDebitCardMainAccountBalance(String debitCardNumber) {
+        return accountRepository.findAll().filter(x -> x.getDebitCardNumber() != null
+                        && x.getDebitCardNumber().equals(debitCardNumber) && x.getDebitCardMainAccount() != null &&
+                        x.getDebitCardMainAccount().equals(true))
+                .next()
+                .map(x -> x.getBalance())
+                .switchIfEmpty(Mono.error(new CustomNotFoundException("The debit card does not have a main account associated")));
+    }
+    public Mono<Integer> getDebitCardNextPriorityOrder(String debitCardNumber)
+    {
+        return accountRepository.findAll().filter(x -> x.getDebitCardNumber() != null
+                        && x.getDebitCardNumber().equals(debitCardNumber))
+                .sort(Comparator.comparing(AccountEntity::getDebitCardPriorityOrder))
+                .takeLast(1)
+                .next()
+                .map(x -> (x.getDebitCardPriorityOrder() + 1))
+                .switchIfEmpty(Mono.error(new CustomNotFoundException("The debit card does not have accounts associated")));
+    }
+    @Override
+    public Mono<AccountEntity> linkDebitCardSecondaryAccount(String accountNumber, String debitCardNumber, Integer DebitCardPriorityOrder)
     {
         return getOne(accountNumber).flatMap(c -> {
+            c.setHasDebitCard(true);
             c.setDebitCardNumber(debitCardNumber);
-
-                AccountEntity temp = accountRepository.findAll().filter(x -> x.getDebitCardNumber().equals(debitCardNumber))
-                        .toStream()
-                        .max(Comparator.comparing(AccountEntity::getDebitCardPriorityOrder))
-                        .get();
-
-            c.setDebitCardPriorityOrder(temp.getDebitCardPriorityOrder() + 1);
-
+            c.setDebitCardPriorityOrder(DebitCardPriorityOrder);
             c.setDebitCardMainAccount(false);
             c.setModifyDate(new Date());
             return accountRepository.save(c);
         }).switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
     }
     @Override
-    public Mono<Boolean> checkDebitCardMainAccount(String debitCardNumber)
-    {
-        return accountRepository.findAll().filter(x -> x.getDebitCardNumber().equals(debitCardNumber)
-        && x.getDebitCardMainAccount().equals(true)).hasElements();
-    }
-    @Override
-    public Flux<AccountEntity> linkDebitCardSecondaryAccounts(String clientDocumentNumber, String debitCardNumber)
-    {
-        return accountRepository.findAll().filter(x -> x.getClientDocumentNumber().equals(clientDocumentNumber)
-        && x.getDebitCardNumber().isEmpty() && x.getDebitCardMainAccount().equals(false) ).flatMap(c -> linkDebitCardSecondaryAccount(c.getAccountNumber(),debitCardNumber));
-    }
-    @Override
-    public Mono<Double> getBalanceByDebitCard(String debitCardNumber) {
-        return accountRepository.findAll().filter(x -> x.getDebitCardNumber().equals(debitCardNumber) && x.getDebitCardMainAccount().equals(true))
-                .next()
-                .map(x -> x.getBalance())
-                .switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
-    }
-    @Override
     public Mono<AccountEntity> addDebitCardPayment(String debitCardNumber, double amount)
     {
-        return accountRepository.findAll().filter(x -> x.getDebitCardNumber().equals(debitCardNumber))
+        return accountRepository.findAll().filter(x -> x.getDebitCardNumber() != null &&
+                        x.getDebitCardNumber().equals(debitCardNumber))
                 .filter(x -> x.getBalance() >= amount)
                 .sort(Comparator.comparing(AccountEntity::getDebitCardPriorityOrder))
                 .next()
