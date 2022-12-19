@@ -46,7 +46,6 @@ public class AccountEntity {
     private int maxMonthlyOperations;
     private int currentMonthOperations;
     private double commissionPercentage;
-    private int operationDay;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     private Date createDate;
