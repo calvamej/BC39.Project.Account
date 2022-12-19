@@ -313,6 +313,6 @@ public class AccountServiceImplementation implements AccountService{
                 .sort(Comparator.comparing(AccountEntity::getDebitCardPriorityOrder))
                 .next()
                 .flatMap(c -> withdrawBalance(c.getAccountNumber(),amount))
-                .switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
+                .switchIfEmpty(Mono.error(new CustomNotFoundException("The debit card does not have an account associated or it does not have enough funds")));
     }
 }
