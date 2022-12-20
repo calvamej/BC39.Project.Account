@@ -3,6 +3,7 @@ package com.bootcamp.project.account.service;
 import com.bootcamp.project.account.entity.AccountEntity;
 import com.bootcamp.project.account.entity.yanki.YankiDTO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -22,12 +23,20 @@ public class Consumer {
 		String response = addYankiOperation(yankiDTO.getDebitCardNumber(), yankiDTO.getType(), yankiDTO.getAmount());
 		System.out.println(response);
 	}
-
+	@Cacheable(value = "accountCache")
+	public AccountEntity getAccount(String debitCardNumber, Query query)
+	{
+		return mongoTemplate.findOne(query, AccountEntity.class);
+	}
+	public AccountEntity update(Query query,Update update)
+	{
+		return mongoTemplate.findAndModify(query, update, AccountEntity.class);
+	}
 	public String addYankiOperation(String debitCardNumber, String type, double amount) {
 
 		Query query = new Query();
 		query.addCriteria(Criteria.where("debitCardNumber").is(debitCardNumber).and("debitCardMainAccount").is(true));
-		AccountEntity entity = mongoTemplate.findOne(query, AccountEntity.class);
+		AccountEntity entity = getAccount(debitCardNumber,query);
 		String typePastTense = "";
 
 		if(entity.getAccountNumber() != null)
@@ -50,8 +59,8 @@ public class Consumer {
 				}
 
 			}
-			mongoTemplate.findAndModify(query, update, AccountEntity.class);
-			return "The account " + entity.getAccountNumber() + " associated with the debit card " + debitCardNumber + " " + typePastTense + " $" + amount + ".";
+			AccountEntity updatedEntity = update(query, update);
+			return "The account " + updatedEntity.getAccountNumber() + " associated with the debit card " + updatedEntity.getDebitCardNumber() + " " + typePastTense + " $" + amount + ".";
 		}
 		else
 		{
