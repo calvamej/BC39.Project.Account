@@ -25,7 +25,7 @@ public class Consumer {
 
 	@KafkaListener(topics="mytopic", groupId="mygroup")
 	public void consumeFromTopic(YankiDTO yankiDTO) {
-
+		System.out.println("YANKI RECEIVED");
 		String response = addYankiOperation(yankiDTO.getDebitCardNumber(), yankiDTO.getType(), yankiDTO.getAmount());
 		System.out.println(response);
 	}
