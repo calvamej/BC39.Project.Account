@@ -1,6 +1,7 @@
 package com.bootcamp.project.account.service;
 
 import com.bootcamp.project.account.entity.AccountEntity;
+import com.bootcamp.project.account.entity.operation.OperationDTO;
 import com.bootcamp.project.account.entity.yanki.YankiDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
@@ -9,6 +10,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,6 +18,10 @@ public class Consumer {
 
 	@Autowired
 	private MongoTemplate mongoTemplate;
+	public static final String topic = "mytopicOperation";
+
+	@Autowired
+	private KafkaTemplate<String, OperationDTO> kafkaTemp;
 
 	@KafkaListener(topics="mytopic", groupId="mygroup")
 	public void consumeFromTopic(YankiDTO yankiDTO) {
@@ -60,11 +66,22 @@ public class Consumer {
 
 			}
 			AccountEntity updatedEntity = update(query, update);
+			publishToTopic(entity.getAccountNumber(), typePastTense.toUpperCase() + " - YANKI", amount, entity.getClientDocumentNumber(), entity.getProductCode(), entity.getDebitCardNumber());
 			return "The account " + updatedEntity.getAccountNumber() + " associated with the debit card " + updatedEntity.getDebitCardNumber() + " " + typePastTense + " $" + amount + ".";
 		}
 		else
 		{
 			return "The debit card number does not have a main account associated";
 		}
+	}
+	public void publishToTopic(String accountNumber, String operationType, Double amount, String clientDocumentNumber, String productCode, String debitCardNumber) {
+		OperationDTO operationDTO = new OperationDTO();
+		operationDTO.setAccountNumber(accountNumber);
+		operationDTO.setOperationType(operationType);
+		operationDTO.setAmount(amount);
+		operationDTO.setClientDocumentNumber(clientDocumentNumber);
+		operationDTO.setProductCode(productCode);
+		operationDTO.setDebitCardNumber(debitCardNumber);
+		this.kafkaTemp.send(topic, operationDTO);
 	}
 }

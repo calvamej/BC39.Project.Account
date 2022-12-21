@@ -36,4 +36,5 @@ public interface AccountService {
     public Mono<Integer> getDebitCardNextPriorityOrder(String debitCardNumber);
     public Mono<AccountEntity> linkDebitCardSecondaryAccount(String accountNumber, String debitCardNumber,Integer DebitCardPriorityOrder);
     public Mono<AccountEntity> addDebitCardPayment(String debitCardNumber, double amount);
+    public void publishToTopic(String creditNumber, String operationType, Double amount, String clientDocumentNumber, String productCode, String creditCardNumber);
 }

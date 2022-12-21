@@ -1,12 +1,14 @@
 package com.bootcamp.project.account.service;
 
 import com.bootcamp.project.account.entity.AccountEntity;
+import com.bootcamp.project.account.entity.operation.OperationDTO;
 import com.bootcamp.project.account.entity.report.AccountDailyReportEntity;
 import com.bootcamp.project.account.entity.report.AccountReportEntity;
 import com.bootcamp.project.account.exception.CustomInformationException;
 import com.bootcamp.project.account.exception.CustomNotFoundException;
 import com.bootcamp.project.account.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -18,6 +20,10 @@ import java.util.stream.Collectors;
 @Service
 public class AccountServiceImplementation implements AccountService{
     private static Logger Log = Logger.getLogger(AccountServiceImplementation.class);
+    public static final String topic = "mytopicOperation";
+
+    @Autowired
+    private KafkaTemplate<String, OperationDTO> kafkaTemp;
     @Autowired
     private AccountRepository accountRepository;
 
@@ -125,6 +131,7 @@ public class AccountServiceImplementation implements AccountService{
                     c.setBalance(c.getBalance() + amount);
                 }
                 c.setModifyDate(new Date());
+            publishToTopic(c.getAccountNumber(), "ACCOUNT DEPOSIT BALANCE", amount, c.getClientDocumentNumber(), c.getProductCode(), c.getDebitCardNumber());
             return accountRepository.save(c)
                     .then(applyCommissionFee(c.getAccountNumber(), amount));
         }).switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
@@ -136,6 +143,7 @@ public class AccountServiceImplementation implements AccountService{
             if(c.getBalance() >= amount) {
                 c.setBalance(c.getBalance() - amount);
                 c.setModifyDate(new Date());
+                publishToTopic(c.getAccountNumber(), "ACCOUNT WITHDRAW BALANCE", amount, c.getClientDocumentNumber(), c.getProductCode(), c.getDebitCardNumber());
                 return accountRepository.save(c)
                         .then(applyCommissionFee(c.getAccountNumber(), amount));
             }
@@ -163,6 +171,7 @@ public class AccountServiceImplementation implements AccountService{
                 c.setModifyDate(new Date());
                 //MAINTENANCE FEES OCCUR AT THE END OF THE MONTH, SO THE COUNTER RESETS FOR NEXT MONTH
                 c.setCurrentMonthOperations(0);
+                publishToTopic(c.getAccountNumber(), "MAINTENANCE FEE", c.getMaintenanceCost(), c.getClientDocumentNumber(), c.getProductCode(), null);
                 return accountRepository.save(c);
         }).switchIfEmpty(Mono.error(new CustomNotFoundException("Account not found")));
     }
@@ -181,6 +190,7 @@ public class AccountServiceImplementation implements AccountService{
                 {
                     c.setBalance(c.getBalance() - (amount * c.getCommissionPercentage()));
                 }
+                publishToTopic(c.getAccountNumber(), "COMMISSION", amount, c.getClientDocumentNumber(), c.getProductCode(), c.getDebitCardNumber());
             }
             c.setCurrentMonthOperations(c.getCurrentMonthOperations() + 1);
             c.setModifyDate(new Date());
@@ -314,5 +324,16 @@ public class AccountServiceImplementation implements AccountService{
                 .next()
                 .flatMap(c -> withdrawBalance(c.getAccountNumber(),amount))
                 .switchIfEmpty(Mono.error(new CustomNotFoundException("The debit card does not have an account associated or it does not have enough funds")));
+    }
+    @Override
+    public void publishToTopic(String accountNumber, String operationType, Double amount, String clientDocumentNumber, String productCode, String debitCardNumber) {
+        OperationDTO operationDTO = new OperationDTO();
+        operationDTO.setAccountNumber(accountNumber);
+        operationDTO.setOperationType(operationType);
+        operationDTO.setAmount(amount);
+        operationDTO.setClientDocumentNumber(clientDocumentNumber);
+        operationDTO.setProductCode(productCode);
+        operationDTO.setDebitCardNumber(debitCardNumber);
+        this.kafkaTemp.send(topic, operationDTO);
     }
 }
