@@ -13,6 +13,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class Consumer {
 
@@ -25,14 +27,12 @@ public class Consumer {
 
 	@KafkaListener(topics="mytopic", groupId="mygroup")
 	public void consumeFromTopic(YankiDTO yankiDTO) {
-		System.out.println("YANKI RECEIVED");
 		String response = addYankiOperation(yankiDTO.getDebitCardNumber(), yankiDTO.getType(), yankiDTO.getAmount());
 		System.out.println(response);
 	}
-	@Cacheable(value = "accountCache")
-	public AccountEntity getAccount(String debitCardNumber, Query query)
+	public List<AccountEntity> getAccount(String debitCardNumber, Query query)
 	{
-		return mongoTemplate.findOne(query, AccountEntity.class);
+			return mongoTemplate.find(query, AccountEntity.class,"Account");
 	}
 	public AccountEntity update(Query query,Update update)
 	{
@@ -40,39 +40,48 @@ public class Consumer {
 	}
 	public String addYankiOperation(String debitCardNumber, String type, double amount) {
 
-		Query query = new Query();
-		query.addCriteria(Criteria.where("debitCardNumber").is(debitCardNumber).and("debitCardMainAccount").is(true));
-		AccountEntity entity = getAccount(debitCardNumber,query);
-		String typePastTense = "";
-
-		if(entity.getAccountNumber() != null)
+		try
 		{
-			Update update = new Update();
-			if(type != null && type.toUpperCase().equals("RECEIVE"))
+			Query query = new Query();
+			query.addCriteria(Criteria.where("debitCardNumber").is(debitCardNumber).and("debitCardMainAccount").is(true));
+			List<AccountEntity> entityList = getAccount(debitCardNumber,query);
+			String typePastTense = "";
+			if(entityList.size() > 0)
 			{
-				update.set("balance",entity.getBalance() + amount);
-				typePastTense ="received";
-			}
-			else if(type != null && type.toUpperCase().equals("SEND"))
-			{
-				if(entity.getBalance() >= amount)
+				AccountEntity entity = entityList.get(0);;
+				Update update = new Update();
+				if(type != null && type.toUpperCase().equals("RECEIVE"))
 				{
-					update.set("balance",entity.getBalance() - amount);
-					typePastTense ="sent";
+					update.set("balance",entity.getBalance() + amount);
+					typePastTense ="received";
 				}
-				else{
-					return "The main account associated to the debit card does not have enough funds to send $" + amount;
-				}
+				else if(type != null && type.toUpperCase().equals("SEND"))
+				{
+					if(entity.getBalance() >= amount)
+					{
+						update.set("balance",entity.getBalance() - amount);
+						typePastTense ="sent";
+					}
+					else{
+						return "The main account associated to the debit card does not have enough funds to send $" + amount;
+					}
 
+				}
+				AccountEntity updatedEntity = update(query, update);
+				publishToTopic(entity.getAccountNumber(), typePastTense.toUpperCase() + " - YANKI", amount, entity.getClientDocumentNumber(), entity.getProductCode(), entity.getDebitCardNumber());
+				return "The account " + updatedEntity.getAccountNumber() + " associated with the debit card " + updatedEntity.getDebitCardNumber() + " " + typePastTense + " $" + amount + ".";
 			}
-			AccountEntity updatedEntity = update(query, update);
-			publishToTopic(entity.getAccountNumber(), typePastTense.toUpperCase() + " - YANKI", amount, entity.getClientDocumentNumber(), entity.getProductCode(), entity.getDebitCardNumber());
-			return "The account " + updatedEntity.getAccountNumber() + " associated with the debit card " + updatedEntity.getDebitCardNumber() + " " + typePastTense + " $" + amount + ".";
+			else
+			{
+				return "The debit card number does not have a main account associated";
+			}
 		}
-		else
+		catch(Exception ex)
 		{
-			return "The debit card number does not have a main account associated";
+			System.out.println("Catch:" + ex.getMessage());
+			return "";
 		}
+
 	}
 	public void publishToTopic(String accountNumber, String operationType, Double amount, String clientDocumentNumber, String productCode, String debitCardNumber) {
 		OperationDTO operationDTO = new OperationDTO();
